@@ -1,7 +1,9 @@
-# Ring-Server
+# Ring-Httpkit-Server
 
-A library for starting a web server to serve a [Ring][1] handler with
-sensible default options and environment variable overrides.
+A library forked from Ring-Server for starting a web server to serve a [Ring][1] handler with
+sensible default options and environment variable overrides
+
+Using http-kit as web server,supporting websocket.
 
 [1]: https://github.com/ring-clojure/ring
 
@@ -19,11 +21,6 @@ In production:
 * You can specify the port via the `PORT` environment variable
 * You can add hooks to run on startup and shutdown.
 
-## Install
-
-Add the following dependency to your `project.clj` file:
-
-    [ring-server "0.4.0"]
 
 ## Usage 
 
@@ -43,8 +40,6 @@ You can also specify a map of options:
 The following options are supported:
 
 * `:port`    - The port to start the server on, overrides `$PORT`
-
-* `:join?`   - Whether to wait until the server stops (default true)
 
 * `:init`    - A function executed when the server starts
 
