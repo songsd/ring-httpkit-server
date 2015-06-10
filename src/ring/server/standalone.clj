@@ -1,11 +1,13 @@
 (ns ring.server.standalone
   "Functions to start a standalone Ring server."
   (:use ring.adapter.jetty
+        org.httpkit.server
         ring.server.options
         ring.middleware.stacktrace
         ring.middleware.reload
         ring.middleware.refresh
-        [clojure.java.browse :only (browse-url)]))
+        [clojure.java.browse :only (browse-url)])
+  (:require [ring.server.info :as info]))
 
 (defn- try-port
   "Try running a server under one port or a list of ports. If a list of ports
@@ -21,22 +23,19 @@
 
 (defn server-port
   "Get the port the server is listening on."
-  [server]
-  (-> (.getConnectors server)
-      (first)
-      (.getPort)))
+  []
+  @info/server-port
+  )
 
 (defn server-host
   "Get the host the server is bound to."
-  [server]
-  (-> (.getConnectors server)
-      (first)
-      (.getHost)
+  []
+  (-> @info/server-host
       (or "localhost")))
 
-(defn- open-browser-to [server options]
+(defn- open-browser-to [options]
   (browse-url
-   (str "http://" (server-host server) ":" (server-port server) (browser-uri options))))
+   (str "http://" (server-host) ":" (server-port) (browser-uri options))))
 
 (defmacro ^{:private true} in-thread
   "Execute the body in a new thread and return the Thread object."
@@ -99,11 +98,18 @@
     (try-port (port options)
       (fn [port]
         (let [options (merge {:port port} options)
-              server  (run-jetty handler options)
-              thread  (add-destroy-hook server destroy)]
-          (println "Started server on port" (server-port server))
+              shutdown-handler  (run-server handler options)
+              server (:server (meta shutdown-handler))
+              thread (add-destroy-hook server destroy)
+              ]
+          (reset! info/server-port port)
+          (reset! info/shutdown-server-func shutdown-handler)
+          
+          (println "Started server on port" (server-port))
           (if (open-browser? options)
-            (open-browser-to server options))
+            (open-browser-to  options))
+
           (if join?
             (.join thread))
-          server)))))
+
+          shutdown-handler)))))
